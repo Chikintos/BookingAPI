@@ -1,6 +1,6 @@
 import exress, { Router } from "express";
 import { UserCreate, UserDelete, UserGet, UserLogin, UserRestore, UserUpdateInfo } from "../controllers/userController";
-import { validateToken } from "../../validateToken";
+import { validateToken } from "../middlewares/validateToken";
 
 
 

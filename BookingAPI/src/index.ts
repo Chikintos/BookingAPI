@@ -10,7 +10,6 @@ import multer from "multer"
 
 
 
-
 const app = express()
 const port : number = +process.env.SERVER_PORT || 5000;
 const host : string = process.env.DB_HOST || "localhost";

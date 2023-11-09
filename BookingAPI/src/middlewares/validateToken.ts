@@ -1,7 +1,7 @@
 import asyncHandler from "express-async-handler"
 import jsonwebtoken from "jsonwebtoken"
 import { Request, Response, NextFunction } from 'express';
-import { UserRequest } from "./src/interfaces/UserRequest";
+import { UserRequest } from "../interfaces/UserRequest";
 
 
 export const validateToken = (req: UserRequest, res: Response, next: NextFunction) => {
