@@ -164,7 +164,7 @@ export const UserUpdateInfo = asyncHandler(
     const fieldsToDelete = ["password", "isActive", "role"];
     fieldsToDelete.forEach((field) => delete user[field]);
 
-    res.json({ user });
+    res.status(200).json({ user });
   }
 );
 
@@ -187,7 +187,7 @@ export const UserDelete = asyncHandler(
     await usersRepository.softRemove(user);
     const fieldsToDelete = ["password", "isActive", "role"];
     fieldsToDelete.forEach((field) => delete user[field]);
-    res.status(200).json({ message: "delete succesfully", user });
+    res.status(200).json({"message":"delete succesfull"});
   }
 );
 

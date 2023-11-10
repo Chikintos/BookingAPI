@@ -5,6 +5,7 @@
          "es6"
       ],
       "esModuleInterop": true,
+      "resolveJsonModule": true,
       "target": "es5",
       "module": "commonjs",
       "moduleResolution": "node",

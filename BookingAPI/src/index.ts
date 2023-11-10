@@ -5,10 +5,9 @@ import { router as userRouter } from "./routers/userRouter"
 import bodyParser from "body-parser";
 import errorHandler from "./middlewares/errorHandler";
 import multer from "multer"
-
-
-
-
+import swagerUI from "swagger-ui-express"
+import * as yaml from "yaml"
+import * as fs from "fs"
 
 const app = express()
 const port : number = +process.env.SERVER_PORT || 5000;
@@ -29,6 +28,10 @@ app.use(upload.array());
 app.use(express.static('public'));
 
 app.use("/api/user",userRouter)
+const file  = fs.readFileSync('./src/swagger/openapi.yaml', 'utf8')
+const swaggerDocument = yaml.parse(file)
+console.log(swaggerDocument)
+app.use("/api/docs",swagerUI.serve,swagerUI.setup(swaggerDocument))
 
 app.use(errorHandler)
 

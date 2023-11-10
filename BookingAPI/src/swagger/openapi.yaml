@@ -1,0 +1,244 @@
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: User Management API
+  description: API for managing user information
+  contact:
+    email: your.email@example.com
+  license:
+    name: Your License
+    url: http://your-license-url.com
+servers:
+  - url: https://api.yourdomain.com/v1
+paths:
+  /user/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: User ID
+
+    get:
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      summary: Get user info
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/User"
+
+          description: Success
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+    delete:
+      tags:
+        - User
+      summary: Delete user
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: 
+                type: object
+                example: 
+                  message: delete succesfull
+        '400':
+          description: Bad request
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+      security:
+        - bearerAuth: []
+        
+    put:
+      tags:
+        - User
+      summary: Update user
+      parameters:
+      - name: firstname
+        in: header
+        required: false
+        schema:
+          type: string
+          example: Kiril
+        description: User firstname. Must be unique
+      - name: lastname
+        in: header
+        required: false
+        schema:
+          type: string
+          example: Kiriechka
+        description: User lastname
+      - name: phone number
+        in: header
+        required: false
+        schema:
+          type: string
+          example: MegaStRoNgpassword123
+        description: User password. lenght can`t be < 8 
+      requestBody:
+        content:
+          application/json:
+            example:
+              firstName: New
+              lastName: Name
+              phone_number: '0987654321'
+              email: new.email@example.com
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/UserUpdateRequest"
+        '404':
+          description: User not found
+      security:
+        - bearerAuth: []
+  /user:
+    post:
+      summary: Get user info
+      description: Create user 
+      parameters:
+      - name: email
+        in: header
+        required: true
+        schema:
+          type: string
+          example: newuser@example.com
+        description: User email. Must be unique
+      - name: role
+        in: header
+        required: true
+        schema:
+          type: string
+          enum: [admin,user,organizator]
+        description: User role
+      - name: password
+        in: header
+        required: true
+        schema:
+          type: string
+          example: MegaStRoNgpassword123
+        description: User password. lenght can`t be < 8 
+      tags:
+        - User
+      requestBody:
+        content:
+          application/json:
+            example:
+              email: newuser@example.com
+              role: admin
+              password: MegaStRoNgpassword123
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: 
+                type: object
+                example: 
+                  token: userToken
+                  user: 
+                    id: 1
+                    firstname: 
+                    lastname: 
+                    email: newuser@example.com
+                    role: admin
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+
+
+
+  /users/{id}/restore:
+    parameters:
+
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      tags:
+        - User
+      summary: Restore user
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '404':
+          description: User not found
+      security:
+        - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        firstName:
+          type: string
+          example: Kiril
+
+        lastName:
+          type: string
+          example: Kiriechka
+
+        email:
+          type: string
+          example: mymail.13@mail.com
+
+        phone_number:
+          type: string
+          example: 3808254246775
+        role:
+          type: string
+          example: admin
+
+    UserCreateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        role:
+          type: string
+        password:
+          type: string
+    UserUpdateRequest:
+      type: object
+      properties:
+        id: 
+          type: integer
+          example: 1
+        firstName:
+          type: string
+          example: New
+        lastName:
+          type: string
+          example: Name
+        phone_number:
+          type: string
+          example: 380987654321
+        email:
+          type: string
+          example: new.email@example.com
