@@ -23,7 +23,7 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
             res.json({ title: "SERVER_ERROR", message: err.message});
             break;
         default:
-            console.log("Error", err);
+            console.log("[Error]", err);
             res.json(err);
             break;
     }

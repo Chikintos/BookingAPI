@@ -1,8 +1,10 @@
 {
+
    "name": "BookingAPI",
    "version": "0.0.1",
    "description": "Awesome project developed with TypeORM.",
    "type": "commonjs",
+   "license":"MIT",
    "devDependencies": {
       "@types/express": "^4.17.21",
       "@types/node": "^16.11.10",
@@ -26,9 +28,11 @@
       "typeorm": "0.3.17"
    },
    "scripts": {
-      "dev": "concurrently \"yarn run watch\" \"yarn run start\"",
+      "dev": "concurrently \"yarn run watch\" \"yarn run start_dev\"",
       "watch": "tsc -w",
-      "start": "nodemon build",
+      "start_dev": "nodemon build",
+      "start": "node build/index.js",
+      "build": "tsc",
       "typeorm": "typeorm-ts-node-commonjs"
    }
 }
