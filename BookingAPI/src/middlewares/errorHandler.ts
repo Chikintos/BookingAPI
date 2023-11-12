@@ -5,7 +5,7 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
     const statusCode = res.statusCode ? res.statusCode : Constants.SERVER_ERROR;
     switch (statusCode) {
         case Constants.NOT_FOUND:
-            res.json({ title: "NOT_FOUND", message: err.message});
+            res.json({ title: "NOT_FOUND", message: err.message,});
             break;
         case Constants.UNAUTHORIZED:
             res.json({ title: "UNAUTHORIZED", message: err.message});

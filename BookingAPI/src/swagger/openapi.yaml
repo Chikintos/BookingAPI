@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.0.0
 info:
   version: 1.0.0
   title: User Management API
@@ -107,7 +107,7 @@ paths:
         - bearerAuth: []
   /user:
     post:
-      summary: Get user info
+      summary: create a new user
       description: Create user 
       parameters:
       - name: email
@@ -148,21 +148,41 @@ paths:
               schema: 
                 type: object
                 example: 
-                  token: userToken
-                  user: 
-                    id: 1
-                    firstname: 
-                    lastname: 
-                    email: newuser@example.com
-                    role: admin
+                  message: user create succesfull
+     
         '400':
           description: Bad request
         '500':
           description: Internal server error
 
+  /user/login:
+      post:
+        tags:
+          - User
+        summary: login user
+        responses:
+          '200':
+            description: Success
+            content:
+              application/json:
+                schema: 
+                  type: object
+                  example: 
+                    token: userToken
+                    user: 
+                      id: 1
+                      firstname: 
+                      lastname: 
+                      email: newuser@example.com
+                      role: admin
+          '400':
+            description: Bad request
+          '404':
+            description: User not found
+        security:
+          - bearerAuth: []
 
-
-  /users/{id}/restore:
+  /user/{id}/restore:
     parameters:
 
       - name: id

@@ -2,11 +2,12 @@ import { AppDataSource } from "../data-source";
 import { User, UserRole } from "../entity/user";
 import asyncHandler from "express-async-handler";
 import * as EmailValidator from "email-validator";
-import exress, { Router, Request, Response } from "express";
+import {  Request, Response } from "express";
 import { UserRequest } from "../interfaces/UserRequest";
 import bcrypt from "bcrypt";
 import jsonwebtoken from "jsonwebtoken";
 import { IsNull, Not } from "typeorm";
+import { Console } from "console";
 
 const usersRepository = AppDataSource.getRepository(User);
 
@@ -43,7 +44,7 @@ export const UserCreate = asyncHandler(async (req: Request, res: Response) => {
     // validators
     if (!(email && role && password)) {
       res.status(400);
-      throw new Error("body is empty");
+      throw new Error("all parameters are required");
     }
 
     if (!EmailValidator.validate(email)) {
@@ -78,7 +79,7 @@ export const UserCreate = asyncHandler(async (req: Request, res: Response) => {
   });
   try {
     const results = await usersRepository.save(user);
-    res.json({ email, role });
+    res.status(200).json({ message: "user create succesfull" });
   } catch (error) {
     res.status(500);
     throw new Error("server error");
@@ -89,6 +90,7 @@ export const UserLogin = asyncHandler(async (req: Request, res: Response) => {
   let { email, password } = req.body;
   const token = process.env.ACCESS_TOKEN_SECRET;
   // validators
+  console.log(email,password)
   if (!EmailValidator.validate(email)) {
     res.status(400);
     throw new Error("invalid email");
@@ -171,7 +173,7 @@ export const UserUpdateInfo = asyncHandler(
 export const UserDelete = asyncHandler(
   async (req: UserRequest, res: Response) => {
     const user_id: number = parseInt(req.params.id);
-    if (isNaN(user_id)) {
+    if (!user_id) {
       res.status(400);
       throw new Error("id invaid");
     }
@@ -187,7 +189,7 @@ export const UserDelete = asyncHandler(
     await usersRepository.softRemove(user);
     const fieldsToDelete = ["password", "isActive", "role"];
     fieldsToDelete.forEach((field) => delete user[field]);
-    res.status(200).json({"message":"delete succesfull"});
+    res.status(200).json({ message: "delete succesfull" });
   }
 );
 

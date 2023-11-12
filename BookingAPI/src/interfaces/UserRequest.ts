@@ -8,6 +8,7 @@ export interface UserRequest extends Request {
         email:string,
         role:string
     };
+    file:any
   }
 
 
