@@ -15,14 +15,13 @@ import * as fs from "fs"
 const app = express()
 const port : number = +process.env.SERVER_PORT || 5000;
 const host : string = process.env.DB_HOST || "localhost";
-
+const file  = fs.readFileSync('./src/swagger/openapi.yaml', 'utf8')
+const swaggerDocument = yaml.parse(file)
 
 AppDataSource.initialize().then(async () => {
     console.log(`Connect to db ${process.env.DB_NAME}`)
 }).catch(error => console.log(error))
-const file  = fs.readFileSync('./src/swagger/openapi.yaml', 'utf8')
-const swaggerDocument = yaml.parse(file)
-console.log(swaggerDocument)
+
 
 
 

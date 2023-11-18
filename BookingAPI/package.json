@@ -29,7 +29,8 @@
       "reflect-metadata": "^0.1.13",
       "swagger-ui-express": "^5.0.0",
       "typeorm": "0.3.17",
-      "yaml": "^2.3.4"
+      "yaml": "^2.3.4",
+      "yup": "^1.3.2"
    },
    "scripts": {
       "dev": "concurrently \"yarn run watch\" \"yarn run start_dev\"",

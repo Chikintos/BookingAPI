@@ -2,8 +2,6 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  OneToOne,
-  JoinColumn,
   OneToMany,
   DeleteDateColumn
 } from "typeorm";
@@ -26,9 +24,15 @@ export class venue {
   @Column({
     length: 19,
     unique: true,
-    nullable: false,
+    nullable: true,
   })
   phone_number: string;
+
+  @Column({
+    type: "integer",
+    nullable: false,
+  })
+  capacity: number;
 
   @Column({
     nullable: false,
@@ -36,19 +40,13 @@ export class venue {
   contact_name: string;
 
   @Column({
-    type: "integer",
-    nullable: false,
-  })
-  capacity;
-
-  @Column({
     nullable: false,
   })
   description: string;
 
   @DeleteDateColumn()
-  deletedAt?: Date
+  deletedAt?: Date;
 
-  @OneToMany(() => photo_venue, (photo) => photo.venue)
-  photos: photo_venue[]
+  @OneToMany(() => photo_venue, (photoVenue) => photoVenue.venue)
+  photos: photo_venue[];
 }

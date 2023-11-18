@@ -10,7 +10,8 @@ import exress, { Router, Request, Response } from "express";
 import { UserRequest } from "../interfaces/UserRequest";
 import { request } from "http";
 import { Not } from "typeorm";
-import { uploadFile } from "../scripts/aws_s3";
+import { deleteFileAWS, uploadFile } from "../scripts/aws_s3";
+import { venueCreateSchema, venueUpdateSchema } from "../validators/venueValidator";
 
 const venueRepository = AppDataSource.getRepository(venue);
 const venuePhotoRepository = AppDataSource.getRepository(photo_venue);
@@ -39,49 +40,26 @@ export const VenueCreate = asyncHandler(
   async (req: UserRequest, res: Response) => {
     const { name, address, phone_number, contact_name, capacity, description } =
       req.body;
-
-    {
-      //validators
-
-      if (req.user.role !== UserRole.ADMIN) {
-        res.status(403);
-        throw new Error("you have no rights");
-      }
-      if (
-        !(
-          name &&
-          address &&
-          phone_number &&
-          contact_name &&
-          capacity &&
-          description
-        )
-      ) {
-        res.status(400);
-        throw new Error("All parameters are required");
-      }
-      if (name.length > 40 || name.trim().length < 5) {
-        res.status(400);
-        throw new Error("name invalid");
-      }
-      if (address.trim().length < 5) {
-        res.status(400);
-        throw new Error("address invalid");
-      }
-      if (!phone_regex.test(phone_number)) {
-        res.status(400);
-        throw new Error("phone invalid");
-      }
-      if (contact_name.trim().length < 5) {
-        res.status(400);
-        throw new Error("contact name invalid");
-      }
-      const parse_capacity: number = parseInt(capacity);
-      console.log(parse_capacity);
-      if (!parse_capacity || parse_capacity >= 10000) {
-        res.status(400);
-        throw new Error("capacity invalid");
-      }
+    try {
+      await venueCreateSchema.validate({
+        role:req.user.role,
+        name,
+        address,
+        phone_number,
+        contact_name,
+        capacity,
+        description
+      });
+    } catch (err) {
+      res.status(400);
+      throw new Error(err.errors.toString());
+    }
+    const existed_number = await venueRepository.findOne({
+      where: { phone_number },
+    });
+    if (existed_number) {
+      res.status(400);
+      throw new Error("Venue with this phone number already exists");
     }
     const Venue = await venueRepository.create({
       name,
@@ -91,14 +69,6 @@ export const VenueCreate = asyncHandler(
       capacity,
       description,
     });
-    const existed_number = await venueRepository.find({
-      where: { phone_number },
-    });
-    console.log(existed_number);
-    if (existed_number[0]) {
-      res.status(400);
-      throw new Error("Venue with this phone number already exists");
-    }
     const results = await venueRepository.save(Venue);
     res
       .status(200)
@@ -112,25 +82,22 @@ export const VenueUpdate = asyncHandler(
     const { name, address, phone_number, contact_name, capacity, description } =
       req.body;
 
-    // Validators
-    if (
-      !venue_id ||
-      req.user.role !== UserRole.ADMIN ||
-      name.length > 40 ||
-      name.trim().length < 5 ||
-      address.trim().length < 5 ||
-      !phone_regex.test(phone_number) ||
-      contact_name.trim().length < 5
-    ) {
-      res.status(400);
-      throw new Error("Invalid input data");
-    }
+      try {
+        await venueUpdateSchema.validate({
+          venue_id,
+          role:req.user.role,
+          name,
+          address,
+          phone_number,
+          contact_name,
+          capacity,
+          description
+        });
+      } catch (err) {
+        res.status(400);
+        throw new Error(err.errors.toString());
+      }
 
-    const parse_capacity: number = parseInt(capacity);
-    if (!parse_capacity || parse_capacity >= 10000 || parse_capacity <= 10) {
-      res.status(400);
-      throw new Error("Invalid capacity");
-    }
 
     const Venue = await venueRepository.findOne({ where: { id: venue_id } });
     if (!Venue) {
@@ -141,7 +108,7 @@ export const VenueUpdate = asyncHandler(
     const existed_number = await venueRepository.findOne({
       where: { phone_number, id: Not(Venue.id) },
     });
-
+    
     if (existed_number) {
       res.status(400);
       throw new Error("Venue with this phone number already exists");
@@ -172,12 +139,17 @@ export const VenueDelete = asyncHandler(
         res.status(403);
         throw new Error("you have no rights");
       }
-      const venue = await venueRepository.findOne({ where: { id: venue_id } });
+      const venue = await venueRepository.findOne({ where: { id: venue_id },relations:{photos:true} });
+      if (venue.photos){
+        venue.photos.forEach(photo => {
+          deleteFileAWS(photo.image_key)
+        });
+      }
       if (!venue) {
         res.status(404);
         throw new Error("venue not found");
       }
-      await venueRepository.softRemove(venue);
+      await venueRepository.remove(venue);
       res.status(200).json({ "message":"venue removed succesfull" });
     }
   );
@@ -210,25 +182,31 @@ export const VenueDelete = asyncHandler(
         error.status = true
         error.text = "description is empty"
       }
-      const Venue = await venueRepository.findOne({where:{id:venue_id}})
+      const Venue = await venueRepository.findOne({where:{id:venue_id},relations:{photos:true}})
       if (!Venue){
         res.status(404)
         error.status = true
         error.text = "Venue not found"
       }
+      else if  (Venue.photos.length>10){
+        res.status(409)
+        error.status = true
+        error.text = "Photo count is maximum"
+      }
+
       if (error.status){
         fs.unlinkSync(photo.path)
         throw new Error(error.text)
       }
       const result = await uploadFile(photo)
-      fs.unlinkSync(photo.path)
       
       const photo_venue = await venuePhotoRepository.create({
         description,
-        image_key:result.Key,
+        image_key:photo.filename,
         venue:Venue
       })
       const photo_result = await venuePhotoRepository.save(photo_venue)
+      fs.unlinkSync(photo.path)
       
       res.status(200).json({photo_venue})
     }
@@ -252,3 +230,25 @@ export const VenueDelete = asyncHandler(
       const photo_list = await venuePhotoRepository.find({where:{venue:Venue}})    
       res.status(200).json({photo_list})
     });
+  export const VenueDeletePhoto = asyncHandler(
+      async (req: UserRequest, res: Response) => {
+        const venuePhoto_id: number = parseInt(req.params.id);
+        if (req.user.role !== UserRole.ADMIN) {
+          res.status(403);
+          throw new Error("you have no rights");
+        }
+        if (!venuePhoto_id) {
+          res.status(400);
+          throw new Error("id invaid");
+        }
+        const Photo = await venuePhotoRepository.findOne({where:{id:venuePhoto_id}})
+        if (!Photo){
+          res.status(404)
+          throw new Error("Photo not found")
+        }
+        deleteFileAWS(Photo.image_key)
+        await venuePhotoRepository.remove(Photo)  
+        
+      res.status(200).json({"message":"photo delete succesfull"})
+      });
+    

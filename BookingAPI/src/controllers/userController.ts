@@ -2,12 +2,17 @@ import { AppDataSource } from "../data-source";
 import { User, UserRole } from "../entity/user";
 import asyncHandler from "express-async-handler";
 import * as EmailValidator from "email-validator";
-import {  Request, Response } from "express";
+import { Request, Response } from "express";
 import { UserRequest } from "../interfaces/UserRequest";
 import bcrypt from "bcrypt";
 import jsonwebtoken from "jsonwebtoken";
 import { IsNull, Not } from "typeorm";
 import { Console } from "console";
+import {
+  userCreateSchema,
+  userLoginSchema,
+  userPutSchema,
+} from "../validators/userValidator";
 
 const usersRepository = AppDataSource.getRepository(User);
 
@@ -18,12 +23,10 @@ export const UserGet = asyncHandler(async (req: UserRequest, res: Response) => {
     res.status(400);
     throw new Error("id invaid");
   }
-
   if (req.user.id !== user_id && req.user.role !== UserRole.ADMIN) {
     res.status(403);
     throw new Error("you have no rights");
   }
-  // validators
 
   const user = await usersRepository.find({
     where: {
@@ -40,36 +43,25 @@ export const UserGet = asyncHandler(async (req: UserRequest, res: Response) => {
 
 export const UserCreate = asyncHandler(async (req: Request, res: Response) => {
   let { email, role, password } = req.body;
-  {
-    // validators
-    if (!(email && role && password)) {
-      res.status(400);
-      throw new Error("all parameters are required");
-    }
-
-    if (!EmailValidator.validate(email)) {
-      res.status(400);
-      throw new Error("invalid email");
-    }
-
-    const oldUser = await usersRepository.findOne({
-      where: {
-        email: email,
-      },
+  try {
+    await userCreateSchema.validate({
+      email,
+      role,
+      password,
     });
+  } catch (err) {
+    res.status(400);
+    throw new Error(err.errors.toString());
+  }
 
-    if (oldUser) {
-      res.status(400);
-      throw new Error("email already used");
-    }
-    if (!Object.values(UserRole).includes(role as UserRole)) {
-      res.status(400);
-      throw new Error("role invalid");
-    }
-    if (!password || password.trim().length < 8) {
-      res.status(400);
-      throw new Error("password invalid");
-    }
+  const oldUser = await usersRepository.findOne({
+    where: {
+      email: email,
+    },
+  });
+  if (oldUser) {
+    res.status(400);
+    throw new Error("email already used");
   }
   password = await bcrypt.hash(password, 10);
   const user = await usersRepository.create({
@@ -89,15 +81,14 @@ export const UserCreate = asyncHandler(async (req: Request, res: Response) => {
 export const UserLogin = asyncHandler(async (req: Request, res: Response) => {
   let { email, password } = req.body;
   const token = process.env.ACCESS_TOKEN_SECRET;
-  // validators
-  console.log(email,password)
-  if (!EmailValidator.validate(email)) {
+  try {
+    await userLoginSchema.validate({
+      email,
+      password,
+    });
+  } catch (err) {
     res.status(400);
-    throw new Error("invalid email");
-  }
-  if (!password || password.trim().length < 8) {
-    res.status(400);
-    throw new Error("password too short");
+    throw new Error(err.errors.toString());
   }
 
   const user = await usersRepository.findOne({ where: { email } });
@@ -138,32 +129,38 @@ export const UserUpdateInfo = asyncHandler(
       res.status(403);
       throw new Error("you can`t change anthore user`s info");
     }
-
+    try {
+      await userPutSchema.validate({
+        user_id,
+        firstName,
+        lastName,
+        phone_number,
+        email,
+      });
+    } catch (err) {
+      res.status(400);
+      throw new Error(err.errors.toString());
+    }
     const user = await usersRepository.findOne({ where: { id: user_id } });
     if (!user) {
       res.status(404);
       throw new Error("user not found");
     }
-
-    if (firstName && firstName.trim().length > 5 && firstName.length < 40) {
+    if (firstName) {
       user.firstName = firstName;
     }
-    if (lastName && lastName.trim().length > 5 && lastName.length < 40) {
+    if (lastName) {
       user.lastName = lastName;
     }
-    if (
-      phone_number &&
-      phone_number.trim().length > 9 &&
-      lastName.length < 15
-    ) {
+    if (phone_number) {
       user.phone_number = phone_number;
     }
-    if (EmailValidator.validate(email)) {
+    if (email) {
       user.email = email;
     }
     await usersRepository.save(user);
 
-    const fieldsToDelete = ["password", "isActive", "role"];
+    const fieldsToDelete = ["password", "isActive", "role","deletedAt"];
     fieldsToDelete.forEach((field) => delete user[field]);
 
     res.status(200).json({ user });
@@ -187,7 +184,7 @@ export const UserDelete = asyncHandler(
       throw new Error("user not found");
     }
     await usersRepository.softRemove(user);
-    const fieldsToDelete = ["password", "isActive", "role"];
+    const fieldsToDelete = ["password", "isActive", "role","deletedAt"];
     fieldsToDelete.forEach((field) => delete user[field]);
     res.status(200).json({ message: "delete succesfull" });
   }
@@ -212,7 +209,7 @@ export const UserRestore = asyncHandler(
 
     await usersRepository.restore(user.id);
 
-    const fieldsToDelete = ["password", "isActive", "role"];
+    const fieldsToDelete = ["password", "isActive", "role","deletedAt"];
     fieldsToDelete.forEach((field) => delete user[field]);
     res.status(200).json(user);
   }

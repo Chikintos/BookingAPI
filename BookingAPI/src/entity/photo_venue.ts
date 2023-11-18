@@ -1,11 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column,ManyToOne,JoinColumn } from "typeorm"
+import { Entity, BeforeRemove,PrimaryGeneratedColumn, Column,ManyToOne,JoinColumn } from "typeorm"
 import { venue } from "./venue"
+import { deleteFileAWS } from "../scripts/aws_s3"
 
 
 
 
 @Entity({name:"photo_venue"})
 export class photo_venue {
+
     @PrimaryGeneratedColumn()
     id: number
 
@@ -13,11 +15,15 @@ export class photo_venue {
     description: string
 
     @Column({
-        unique:true
+        unique:false
     })
     image_key: string
 
 
-    @ManyToOne(() => venue, (venue) => venue.photos)
+    @ManyToOne(() => venue, (venue) => venue.photos,{ onDelete: "CASCADE" })
     venue: venue
+
+
+
+
 }
