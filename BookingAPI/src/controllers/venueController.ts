@@ -25,14 +25,14 @@ export const VenueGet = asyncHandler(
     }
     if (req.user.role !== UserRole.ADMIN) {
       res.status(403);
-      throw new Error("you have no rights");
+      throw new Error("only admin can get user info");
     }
-    const venue = await venueRepository.find({ where: { id: user_id } });
-    if (!venue[0]) {
+    const venue = await venueRepository.findOne({ where: { id: user_id },relations:{photos:true}});
+    if (!venue) {
       res.status(404);
       throw new Error("venue not found");
     }
-    res.status(200).json({ venue: venue[0] });
+    res.status(200).json({venue});
   }
 );
 export const VenueCreate = asyncHandler(

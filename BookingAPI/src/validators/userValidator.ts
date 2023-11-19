@@ -9,10 +9,17 @@ export const userCreateSchema = object({
   password: string().min(8).max(20).required(),
 });
 
-export const userLoginSchema = object({
-  email: string().email().required(),
+const loginbaseSchema = object().shape({
   password: string().min(8).max(20).required(),
-});
+})
+export const userLoginEmailSchema = loginbaseSchema.concat(object({
+  email:string().email().required(),
+})
+);
+export const userLoginPhoneSchema = loginbaseSchema.concat(object({
+  phone_number: string().matches(phone_regex, { excludeEmptyString: true }),
+})
+);
 
 export const userPutSchema = object({
   user_id: number().min(1).integer().required(),

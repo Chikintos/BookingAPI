@@ -1,8 +1,10 @@
+import { logger } from "../configs/logger_config";
 import { Constants } from "../constants";
 import { Request, Response, NextFunction } from 'express';
 
 const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
     const statusCode = res.statusCode ? res.statusCode : Constants.SERVER_ERROR;
+    logger.log({level:"error",message:`${err.message} |status code: ${statusCode}| Error stack: ${err.stack}`})
     switch (statusCode) {
         case Constants.NOT_FOUND:
             res.json({ title: "NOT_FOUND", message: err.message,});
@@ -23,7 +25,6 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
             res.json({ title: "SERVER_ERROR", message: err.message});
             break;
         default:
-            console.log("[Error]", err);
             res.json(err);
             break;
     }

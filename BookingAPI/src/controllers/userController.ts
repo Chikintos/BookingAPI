@@ -7,7 +7,8 @@ import bcrypt from "bcrypt";
 import jsonwebtoken from "jsonwebtoken";
 import {
   userCreateSchema,
-  userLoginSchema,
+  userLoginEmailSchema,
+  userLoginPhoneSchema,
   userPutSchema,
 } from "../validators/userValidator";
 
@@ -32,10 +33,12 @@ export const UserGet = asyncHandler(async (req: UserRequest, res: Response) => {
     select: ["firstName", "lastName", "email", "phone_number", "role"],
   });
   if (!user.length) {
-    res.status(404).json({ error: "user not found" });
+    res.status(404)
+    throw new Error("user not found");
+
   }
 
-  res.json(user);
+  res.json({user});
 });
 
 export const UserCreate = asyncHandler(async (req: Request, res: Response) => {
@@ -68,7 +71,7 @@ export const UserCreate = asyncHandler(async (req: Request, res: Response) => {
   });
   try {
     await usersRepository.save(user);
-    res.status(200).json({ message: "user create succesfull" });
+    res.status(200).json({ message: "user create succesfull",user_id:user.id });
   } catch (error) {
     res.status(500);
     throw new Error("server error");
@@ -76,28 +79,54 @@ export const UserCreate = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const UserLogin = asyncHandler(async (req: Request, res: Response) => {
-  let { email, password } = req.body;
+  let { email, password,phone_number } = req.body;
+  console.log(req.body)
   const token = process.env.ACCESS_TOKEN_SECRET;
-  try {
-    await userLoginSchema.validate({
-      email,
-      password,
-    });
-  } catch (err) {
+  let user : User
+  if (email){
+    try {
+      await userLoginEmailSchema.validate({
+        email,
+        password,
+      });
+    } catch (err) {
+      res.status(400);
+      throw new Error(err.errors.toString());
+    }
+    user = await usersRepository.findOne({ where: { email } });
+    if (!user) {
+      res.status(404);
+      throw new Error("password or email invalid");
+    }
+  
+  }
+  else if (phone_number){
+    try {
+      await userLoginPhoneSchema.validate({
+        phone:phone_number,
+        password,
+      });
+    } catch (err) {
+      res.status(400);
+      throw new Error(err.errors.toString());
+    }
+    user = await usersRepository.findOne({ where: { phone_number } });
+    if (!user) {
+      res.status(404);
+      throw new Error("password or phone number invalid");
+    }
+  }
+  else{
     res.status(400);
-    throw new Error(err.errors.toString());
+    throw new Error("Put email or phone number");
   }
 
-  const user = await usersRepository.findOne({ where: { email } });
-  if (!user) {
-    res.status(404);
-    throw new Error("password or email invalid");
-  }
 
-  const password_valid = await bcrypt.compare(password, user.password);
+
+  const password_valid : boolean = await bcrypt.compare(password, user.password);
   if (!password_valid) {
     res.status(400);
-    throw new Error("password or email invalid");
+    throw new Error( email ? "password or email invalid" : "password or phone number invalid");
   }
   const user_sign = {
     id: user.id,
@@ -208,6 +237,6 @@ export const UserRestore = asyncHandler(
 
     const fieldsToDelete = ["password", "isActive", "role","deletedAt"];
     fieldsToDelete.forEach((field) => delete user[field]);
-    res.status(200).json(user);
+    res.status(200).json({user});
   }
 );
