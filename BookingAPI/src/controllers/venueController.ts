@@ -5,15 +5,14 @@ import { photo_venue } from "../entity/photo_venue";
 import fs  from "fs";
 
 import asyncHandler from "express-async-handler";
-import * as EmailValidator from "email-validator";
-import exress, { Router, Request, Response } from "express";
+import {  Response } from "express";
 import { UserRequest } from "../interfaces/UserRequest";
-import { request } from "http";
 import { Not } from "typeorm";
 import { deleteFileAWS, uploadFile } from "../scripts/aws_s3";
-import { venueCreateSchema, venueUpdateSchema } from "../validators/venueValidator";
+import { venueAddPhotoSchema, venueCreateSchema, venueUpdateSchema } from "../validators/venueValidator";
+import { deleteVenueCascase } from "../scripts/entetyDelete";
 
-const venueRepository = AppDataSource.getRepository(venue);
+const venueRepository = AppDataSource.getRepository(venue)
 const venuePhotoRepository = AppDataSource.getRepository(photo_venue);
 const phone_regex = /^\+\d{1,4}\(\d{1,5}\)\d{7}/;
 
@@ -139,19 +138,12 @@ export const VenueDelete = asyncHandler(
         res.status(403);
         throw new Error("you have no rights");
       }
-      const venue = await venueRepository.findOne({ where: { id: venue_id },relations:{photos:true} });
-      if (venue.photos){
-        venue.photos.forEach(photo => {
-          deleteFileAWS(photo.image_key)
-        });
-      }
-      if (!venue) {
-        res.status(404);
-        throw new Error("venue not found");
-      }
-      await venueRepository.remove(venue);
-      res.status(200).json({ "message":"venue removed succesfull" });
+      const venue = await deleteVenueCascase(venue_id)
+      res.json(venue)
+      // const venue = await venueRepository.deleteVenueCascade(venue_id)
     }
+    
+    
   );
 
 
@@ -161,56 +153,47 @@ export const VenueDelete = asyncHandler(
       const photo = req.file
       const {description} = req.body
       const venue_id: number = parseInt(req.params.id);
-      const error = {status:false,text:null}
-      if (req.user.role !== UserRole.ADMIN) {
-        res.status(403);
-        error.status = true
-        error.text = "no permission"
-      }
-      else if (!venue_id) {
-        res.status(400);
-        error.status = true
-        error.text = "no venue id"
-      }
-      else if (!photo){
-        res.status(400)
-        error.status = true
-        error.text = "photo is empty"
-      }
-      else if (!description){
-        res.status(400)
-        error.status = true
-        error.text = "description is empty"
-      }
-      const Venue = await venueRepository.findOne({where:{id:venue_id},relations:{photos:true}})
-      if (!Venue){
-        res.status(404)
-        error.status = true
-        error.text = "Venue not found"
-      }
-      else if  (Venue.photos.length>10){
-        res.status(409)
-        error.status = true
-        error.text = "Photo count is maximum"
-      }
 
-      if (error.status){
+      const Venue = await venueRepository.findOne({where:{id:venue_id},relations:{photos:true}})
+      try {
+        if (!Venue){
+          res.status(404)
+          throw new Error("Venue not found")
+        }
+        else if  (Venue.photos.length>10){
+          res.status(409)
+          throw new Error("maximum photo count is reached")
+        }
+        await venueAddPhotoSchema.validate({
+            photo, 
+            role: req.user.role,
+            venue_id,
+            description
+          });
+      } catch (err) {
+        res.status(400);
         fs.unlinkSync(photo.path)
-        throw new Error(error.text)
+        if (err?.errors)
+          throw new Error(err.errors.toString());
+        throw new Error(err);
+        
       }
       const result = await uploadFile(photo)
-      
-      const photo_venue = await venuePhotoRepository.create({
+      fs.unlinkSync(photo.path)
+      let photo_venue = await venuePhotoRepository.create({
         description,
         image_key:photo.filename,
         venue:Venue
       })
       const photo_result = await venuePhotoRepository.save(photo_venue)
-      fs.unlinkSync(photo.path)
-      
-      res.status(200).json({photo_venue})
+      res.status(200).json({
+        description : photo_result.description,
+        image_key : photo_result.image_key,
+        venue_id : photo_result.venue.id
+      })
     }
   );
+
   export const VenueGetPhoto = asyncHandler(
     async (req: UserRequest, res: Response) => {
       const venue_id: number = parseInt(req.params.id);
@@ -230,6 +213,8 @@ export const VenueDelete = asyncHandler(
       const photo_list = await venuePhotoRepository.find({where:{venue:Venue}})    
       res.status(200).json({photo_list})
     });
+
+
   export const VenueDeletePhoto = asyncHandler(
       async (req: UserRequest, res: Response) => {
         const venuePhoto_id: number = parseInt(req.params.id);
@@ -248,7 +233,6 @@ export const VenueDelete = asyncHandler(
         }
         deleteFileAWS(Photo.image_key)
         await venuePhotoRepository.remove(Photo)  
-        
       res.status(200).json({"message":"photo delete succesfull"})
       });
     

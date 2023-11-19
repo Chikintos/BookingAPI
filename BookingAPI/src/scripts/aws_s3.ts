@@ -1,6 +1,6 @@
 import fs  from "fs";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+const { Upload } = require("@aws-sdk/lib-storage");
 
 
 const bucketName = process.env.AWS_BUCKET_NAME;
@@ -22,21 +22,19 @@ const client = new S3Client({
 
 export async function uploadFile(file){
     const fileStream = fs.createReadStream(file.path)
-    const command = new PutObjectCommand({
-        Bucket: bucketName,
-        Body: fileStream,
-        Key: file.filename,
-        ContentType:file.mimetype
+    const upload = new Upload({
+        client,
+        params: {
+            Bucket: bucketName,
+            Body: fileStream,
+            Key: file.filename,
+        }
     })
+    upload.on("httpUploadProgress", (progress) => {
+        console.log(progress);
+      });
     
-    try {
-        const response = await client.send(command);
-        console.log(response)
-        return response
-      } catch (err) {
-        throw new Error(err)
-
-    }
+      await upload.done();
 }
 
 
@@ -67,7 +65,6 @@ export async function deleteFileAWS(filekey:string)  {
     try{
         const response = client.send(command)
         return response
-    
     }catch(error){
         throw new Error(error)
     }

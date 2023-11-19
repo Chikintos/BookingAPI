@@ -1,13 +1,10 @@
 import { AppDataSource } from "../data-source";
 import { User, UserRole } from "../entity/user";
 import asyncHandler from "express-async-handler";
-import * as EmailValidator from "email-validator";
 import { Request, Response } from "express";
 import { UserRequest } from "../interfaces/UserRequest";
 import bcrypt from "bcrypt";
 import jsonwebtoken from "jsonwebtoken";
-import { IsNull, Not } from "typeorm";
-import { Console } from "console";
 import {
   userCreateSchema,
   userLoginSchema,
@@ -70,7 +67,7 @@ export const UserCreate = asyncHandler(async (req: Request, res: Response) => {
     password,
   });
   try {
-    const results = await usersRepository.save(user);
+    await usersRepository.save(user);
     res.status(200).json({ message: "user create succesfull" });
   } catch (error) {
     res.status(500);
