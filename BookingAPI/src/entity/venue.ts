@@ -6,9 +6,10 @@ import {
   DeleteDateColumn
 } from "typeorm";
 import { photo_venue } from "./photo_venue";
+import { event } from "./event";
 
 @Entity({ name: "venue" })
-export class venue {
+export class Venue {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -44,9 +45,12 @@ export class venue {
   })
   description: string;
 
-  @DeleteDateColumn()
-  deletedAt?: Date;
 
+
+  
   @OneToMany(() => photo_venue, (photoVenue) => photoVenue.venue)
   photos: photo_venue[];
+
+  @OneToMany(() => event, (event) => event.venue,)
+  events: event[];
 }

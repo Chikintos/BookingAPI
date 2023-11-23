@@ -4,6 +4,7 @@ import  express  from "express"
 import { router as userRouter } from "./routers/userRouter"
 import { router as venueRouter } from "./routers/venueRouter"
 import { router as fileRouter } from "./routers/fileRouter"
+import { router as eventRouter } from "./routers/eventRouter"
 
 import upload from "./configs/multer_config"
 import bodyParser from "body-parser";
@@ -34,6 +35,9 @@ app.use("/api/user",userRouter)
 app.use("/api/venue",venueRouter)
 app.use("/api/docs",swagerUI.serve,swagerUI.setup(swaggerDocument))
 app.use("/image",fileRouter)
+app.use("/event",eventRouter)
+
+
 app.use(errorHandler)
 
 app.listen(port, () => {

@@ -1,6 +1,6 @@
 import { AppDataSource } from "../data-source";
 import { UserRole } from "../entity/user";
-import { venue } from "../entity/venue";
+import { Venue } from "../entity/venue";
 import { photo_venue } from "../entity/photo_venue";
 import fs  from "fs";
 
@@ -9,10 +9,10 @@ import {  Response } from "express";
 import { UserRequest } from "../interfaces/UserRequest";
 import { Not } from "typeorm";
 import { deleteFileAWS, uploadFile } from "../scripts/aws_s3";
-import { venueAddPhotoSchema, venueCreateSchema, venueUpdateSchema } from "../validators/venueValidator";
+import { AddPhotoSchema, venueCreateSchema, venueUpdateSchema } from "../validators/venueValidator";
 import { deleteVenueCascase } from "../scripts/entetyDelete";
 
-const venueRepository = AppDataSource.getRepository(venue)
+const venueRepository = AppDataSource.getRepository(Venue)
 const venuePhotoRepository = AppDataSource.getRepository(photo_venue);
 const phone_regex = /^\+\d{1,4}\(\d{1,5}\)\d{7}/;
 
@@ -164,10 +164,10 @@ export const VenueDelete = asyncHandler(
           res.status(409)
           throw new Error("maximum photo count is reached")
         }
-        await venueAddPhotoSchema.validate({
+        await AddPhotoSchema.validate({
             photo, 
             role: req.user.role,
-            venue_id,
+            id:venue_id,
             description
           });
       } catch (err) {
@@ -197,10 +197,6 @@ export const VenueDelete = asyncHandler(
   export const VenueGetPhoto = asyncHandler(
     async (req: UserRequest, res: Response) => {
       const venue_id: number = parseInt(req.params.id);
-      if (req.user.role !== UserRole.ADMIN) {
-        res.status(403);
-        throw new Error("you have no rights");
-      }
       if (!venue_id) {
         res.status(400);
         throw new Error("id invaid");
@@ -227,6 +223,7 @@ export const VenueDelete = asyncHandler(
           throw new Error("id invaid");
         }
         const Photo = await venuePhotoRepository.findOne({where:{id:venuePhoto_id}})
+        
         if (!Photo){
           res.status(404)
           throw new Error("Photo not found")

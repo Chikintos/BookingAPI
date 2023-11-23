@@ -25,9 +25,9 @@ export const venueUpdateSchema = object({
     description: string().min(100).max(5000),
   });
 
-export const venueAddPhotoSchema = object({
+export const AddPhotoSchema = object({
   photo: mixed().required().defined(),
   role: string().oneOf([UserRole.ADMIN]),
-  venue_id: number().min(1).integer().required(),
+  id: number().min(1).integer().required(),
   description: string().max(40),
 })
