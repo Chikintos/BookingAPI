@@ -1,6 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column,OneToOne,JoinColumn, ManyToOne, OneToMany } from "typeorm"
 import { User } from "./user"
-import { integer } from "aws-sdk/clients/cloudfront"
 import { Venue } from "./venue"
 import { photo_event } from "./photo_event"
 
@@ -21,7 +20,9 @@ export class event {
     name: string
 
     @Column({nullable:false})
-    price: integer
+    price: number
+
+
 
     @Column({type: "timestamp",nullable:false})
     date_start

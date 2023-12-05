@@ -10,7 +10,7 @@ import { UserRequest } from "../interfaces/UserRequest";
 import { Not } from "typeorm";
 import { deleteFileAWS, uploadFile } from "../scripts/aws_s3";
 import { AddPhotoSchema, venueCreateSchema, venueUpdateSchema } from "../validators/venueValidator";
-import { deleteVenueCascase } from "../scripts/entetyDelete";
+import { deleteVenueCascase } from "../scripts/entityDelete";
 
 const venueRepository = AppDataSource.getRepository(Venue)
 const venuePhotoRepository = AppDataSource.getRepository(photo_venue);

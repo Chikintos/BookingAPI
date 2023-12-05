@@ -7,6 +7,7 @@ import {
 } from "typeorm";
 import { photo_venue } from "./photo_venue";
 import { event } from "./event";
+import { Max, Min } from "class-validator";
 
 @Entity({ name: "venue" })
 export class Venue {
@@ -45,7 +46,10 @@ export class Venue {
   })
   description: string;
 
-
+  @Column({nullable:false,default:0,type:"decimal"})
+  @Min(0)
+  @Max(5)
+  rate: number
 
   
   @OneToMany(() => photo_venue, (photoVenue) => photoVenue.venue)

@@ -7,6 +7,7 @@ import { Venue } from "./entity/venue";
 import { photo_venue } from "./entity/photo_venue";
 import { event } from "./entity/event";
 import { photo_event } from "./entity/photo_event";
+import { Review } from "./entity/review";
 
 dotenv.config();
 
@@ -19,7 +20,7 @@ export const AppDataSource = new DataSource({
     database: process.env.DB_NAME,
     synchronize: true,
     logging: false,
-    entities: [User,paymentCard,Venue,photo_venue,photo_event,event],
+    entities: [User,paymentCard,Venue,photo_venue,photo_event,event,Review],
     migrations: [],
     subscribers: [],
 })

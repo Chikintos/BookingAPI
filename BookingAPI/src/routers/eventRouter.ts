@@ -1,6 +1,6 @@
 import exress, { Router } from "express";
 import { validateToken } from "../middlewares/validateToken";
-import {  eventAddPhoto, eventCreate, eventDelete, eventDeletePhoto, eventGet, eventGetByUser, eventGetPhoto, eventUpdate } from "../controllers/eventController";
+import {  eventAddPhoto, eventCreate, eventDelete, eventDeletePhoto, eventGet, eventGetByUser, eventGetPhoto, eventSearch, eventUpdate } from "../controllers/eventController";
 
 
 
@@ -10,8 +10,9 @@ const router : Router = exress.Router();
 // POST/GET/PUT/DELETE if user admin GET + orginizator info event, +
 // GET events by user +
 // ADD/DELETE PHOTO
-
 router.post("/",validateToken,eventCreate)
+router.get("/search",eventSearch)
+
 router.get("/:id",eventGet)
 router.put("/:id",validateToken,eventUpdate)
 router.delete("/:id",validateToken,eventDelete)

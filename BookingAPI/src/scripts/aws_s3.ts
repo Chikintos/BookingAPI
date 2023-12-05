@@ -11,7 +11,7 @@ const secretAccessKey = process.env.AWS_SECRET_KEY;
 
 
 
-const client = new S3Client({
+const client : S3Client = new S3Client({
     region,
     credentials:{
         accessKeyId,
@@ -39,7 +39,7 @@ export async function uploadFile(file){
 
 
 
-export async function getFileAWS(filekey){
+export async function getFileAWS(filekey : string){
     const command = new GetObjectCommand({
         Key: filekey,
         Bucket: bucketName
@@ -57,7 +57,7 @@ export async function getFileAWS(filekey){
       }
 }
 
-export async function deleteFileAWS(filekey:string)  {
+export async function deleteFileAWS(filekey : string)  {
     const command = new DeleteObjectCommand({
         Key: filekey,
         Bucket: bucketName
