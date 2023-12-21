@@ -7,7 +7,7 @@ import {
   eventUpdateSchema,
 } from "../validators/eventValidator";
 import { AppDataSource } from "../data-source";
-import { event } from "../entity/event";
+import { Event } from "../entity/event";
 import { Venue } from "../entity/venue";
 import jsonwebtoken from "jsonwebtoken";
 import { User, UserRole } from "../entity/user";
@@ -19,8 +19,9 @@ import { deleteFileAWS, uploadFile } from "../scripts/aws_s3";
 import { token_info } from "../scripts/scripts";
 import { UserTokenInfo } from "../interfaces/UserTokenInfo";
 import { number } from "yup";
+import { QueryBuilder } from "typeorm";
 
-const eventRepository = AppDataSource.getRepository(event);
+const eventRepository = AppDataSource.getRepository(Event);
 const venueRepository = AppDataSource.getRepository(Venue);
 const userRepository = AppDataSource.getRepository(User);
 const eventPhotoRepository = AppDataSource.getRepository(photo_event);
@@ -51,7 +52,7 @@ export const eventCreate = asyncHandler(
     } catch (err) {
       console.log(err);
       res.status(400);
-      throw new Error(err.errors.toString());
+      throw new Error(err.message);
     }
     try {
       const Venue = await venueRepository.findOneBy({ id: venue_id });
@@ -60,7 +61,7 @@ export const eventCreate = asyncHandler(
         res.status(404);
         throw new Error("Venue not found");
       }
-      const new_event: event = await eventRepository.create({
+      const new_event: Event = await eventRepository.create({
         name,
         price,
         date_start: new Date(date_start),
@@ -85,7 +86,7 @@ export const eventGet = asyncHandler(
   async (req: UserRequest, res: Response) => {
     const event_id: number = parseInt(req.params.id);
     let user: UserTokenInfo = await token_info(req);
-    let Event: event = await eventRepository.findOne({
+    let Event: Event = await eventRepository.findOne({
       where: { id: event_id },
       relations: { created_by: true },
       select: { created_by: { id: true } },
@@ -192,7 +193,7 @@ export const eventDelete = asyncHandler(
   async (req: UserRequest, res: Response) => {
     const event_id: number = parseInt(req.params.id);
 
-    let Event: event = await eventRepository.findOne({
+    let Event: Event = await eventRepository.findOne({
       where: { id: event_id },
       relations: { created_by: true },
       select: { id: true, created_by: { id: true } },
@@ -236,7 +237,7 @@ export const eventGetByUser = asyncHandler(
       throw new Error("user not found");
     }
 
-    let Event: event[] = await eventRepository.find({
+    let Event: Event[] = await eventRepository.find({
       where: { created_by: organizator },
       relations: { created_by: true },
       select: { created_by: { id: true } },
@@ -272,7 +273,7 @@ export const eventAddPhoto = asyncHandler(
     } catch (err) {
       res.status(400);
       fs.unlinkSync(photo.path);
-      if (err?.errors) throw new Error(err.errors.toString());
+      if (err?.errors) throw new Error(err.message);
       throw new Error(err);
     }
     const result = await uploadFile(photo);
@@ -340,8 +341,6 @@ export const eventDeletePhoto = asyncHandler(
 export const eventSearch = asyncHandler(
   async (req: UserRequest, res: Response) => {
     let {
-      skip,
-      take,
       address,
       name,
       price_min,
@@ -350,8 +349,11 @@ export const eventSearch = asyncHandler(
       date_end,
       event_type,
     } = req.query;
+    console.log(date_start)
+    const skip : number = parseInt(req.query.skip) || 0
+    const take : number = parseInt(req.query.take) || 10
     try {
-      eventSearchSchema.validate({
+      await eventSearchSchema.validate({
         skip,
         take,
         address,
@@ -363,23 +365,32 @@ export const eventSearch = asyncHandler(
         event_type,
       });
 
-      const filterList = []
+      const EventsQuery = eventRepository.createQueryBuilder("event")
       if (name){
-        filterList.push({name})
+        EventsQuery.andWhere("event.name ILIKE :q",{q:`%${name}%`})
       }
-      if (event_type){
-        filterList.push({event_type})
+      if (address){
+        EventsQuery.leftJoinAndSelect('event.venue', 'venue').andWhere("venue.address ILIKE :q",{q:`%${address}%`})
       }
-      // const Events: event[] = await eventRepository.find({
-      //   where: [
+      if (price_min && price_max){
+        EventsQuery.andWhere("price BETWEEN :price_min AND :price_max",{price_min,price_max})
+      }
+      if (date_start && date_end){
+        EventsQuery.andWhere("date BETWEEN :date_start AND :date_end",{date_start,date_end})
+      }
 
-      //   ],
-      // });
-    } catch (err) {
-      if (res.statusCode === 200) {
+      EventsQuery.skip(skip).take(take)
+      const result = await EventsQuery.getMany()
+      res.json({result})
+    }catch (err) {
+      if(err.name  === "ValidationError"){
+        res.status(400)
+      }
+      else{
         res.status(500);
       }
       throw new Error(err.message);
     }
+
   }
 );

@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column,OneToOne,JoinColumn,DeleteDateColumn, OneToMany } from "typeorm"
 import { paymentCard } from "./paymentCard"
-import { event } from "./event"
+import { Event } from "./event"
 
 export enum UserRole {
     ADMIN = "admin",
@@ -47,8 +47,8 @@ export class User {
     @OneToOne(() => paymentCard, (pay_card) => pay_card.user) 
     pay_card: paymentCard
     
-    @OneToMany(() => event, (event) => event.created_by)
-    events: event[]
+    @OneToMany(() => Event, (event) => event.created_by)
+    events: Event[]
 
 
     @DeleteDateColumn()

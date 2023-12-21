@@ -1,5 +1,5 @@
 import { AppDataSource } from "../data-source";
-import { event } from "../entity/event";
+import { Event } from "../entity/event";
 import { photo_event } from "../entity/photo_event";
 import { photo_venue } from "../entity/photo_venue";
 import { Venue } from "../entity/venue";
@@ -9,7 +9,7 @@ const venueRepository = AppDataSource.getRepository(Venue)
 const venuePhotoRepository = AppDataSource.getRepository(photo_venue)
 const eventPhotoRepository = AppDataSource.getRepository(photo_event)
 
-const eventRepository = AppDataSource.getRepository(event)
+const eventRepository = AppDataSource.getRepository(Event)
 
 // const venuePhotoRepository = AppDataSource.getRepository(photo_venue)
 

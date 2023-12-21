@@ -6,6 +6,8 @@ import { router as venueRouter } from "./routers/venueRouter"
 import { router as fileRouter } from "./routers/fileRouter"
 import { router as eventRouter } from "./routers/eventRouter"
 import { router as reviewRouter } from "./routers/reviewRouter"
+import { router as orderRouter } from "./routers/orderRouter"
+
 import upload from "./configs/multer_config"
 import bodyParser from "body-parser";
 import errorHandler from "./middlewares/errorHandler";
@@ -13,7 +15,7 @@ import swagerUI from "swagger-ui-express"
 import * as yaml from "yaml"
 import * as fs from "fs"
 import cron from 'node-cron';
-import { updateRate } from "./scripts/cronjobs"
+import { paymentStatus, updateRate } from "./scripts/cronjobs"
 
 const app = express()
 const port : number = +process.env.SERVER_PORT || 5000;
@@ -39,10 +41,13 @@ app.use("/api/docs",swagerUI.serve,swagerUI.setup(swaggerDocument))
 app.use("/image",fileRouter)
 app.use("/api/event",eventRouter)
 app.use("/api/review",reviewRouter)
+app.use("/api/order",orderRouter)
+
 app.use(errorHandler)
 
-cron.schedule('*/1 * * * *', () => {
+cron.schedule('*/2 * * * * *', () => {
   updateRate()
+  paymentStatus()
 });
 
 app.listen(port, () => {

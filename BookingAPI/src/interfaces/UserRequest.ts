@@ -9,6 +9,8 @@ export interface UserRequest extends Request {
         role:string
     };
     file:any
+    query: any
+    
   }
 
 

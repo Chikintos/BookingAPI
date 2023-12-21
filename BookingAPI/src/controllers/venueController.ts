@@ -35,6 +35,8 @@ export const VenueGet = asyncHandler(
     res.status(200).json({venue});
   }
 );
+
+
 export const VenueCreate = asyncHandler(
   async (req: UserRequest, res: Response) => {
     const { name, address, phone_number, contact_name, capacity, description } =
@@ -51,7 +53,7 @@ export const VenueCreate = asyncHandler(
       });
     } catch (err) {
       res.status(400);
-      throw new Error(err.errors.toString());
+      throw new Error(err.message);
     }
     const existed_number = await venueRepository.findOne({
       where: { phone_number },

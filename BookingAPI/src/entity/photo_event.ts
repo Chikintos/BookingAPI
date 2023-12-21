@@ -1,5 +1,5 @@
 import { Entity, BeforeRemove,PrimaryGeneratedColumn, Column,ManyToOne,JoinColumn } from "typeorm"
-import { event } from "./event"
+import { Event } from "./event"
 
 
 
@@ -19,8 +19,8 @@ export class photo_event {
     image_key: string
 
 
-    @ManyToOne(() => event, (Event) => Event.photos,{ onDelete: "CASCADE" })
-    event: event
+    @ManyToOne(() => Event, (Event) => Event.photos,{ onDelete: "CASCADE" })
+    event: Event
 
 
 

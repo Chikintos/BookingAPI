@@ -23,6 +23,7 @@
       "bcrypt": "^5.1.1",
       "class-transformer": "^0.5.1",
       "class-validator": "^0.14.0",
+      "cloudipsp-node-js-sdk": "^1.0.8",
       "dotenv": "^16.3.1",
       "express": "^4.18.2",
       "express-async-handler": "^1.2.0",

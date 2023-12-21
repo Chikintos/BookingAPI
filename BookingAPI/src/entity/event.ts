@@ -12,7 +12,7 @@ export enum eventStatus {
 
 
 @Entity({name:"event"})
-export class event {
+export class Event {
     @PrimaryGeneratedColumn()
     id: number
 

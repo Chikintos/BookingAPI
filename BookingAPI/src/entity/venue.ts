@@ -6,7 +6,7 @@ import {
   DeleteDateColumn
 } from "typeorm";
 import { photo_venue } from "./photo_venue";
-import { event } from "./event";
+import { Event } from "./event";
 import { Max, Min } from "class-validator";
 
 @Entity({ name: "venue" })
@@ -55,6 +55,6 @@ export class Venue {
   @OneToMany(() => photo_venue, (photoVenue) => photoVenue.venue)
   photos: photo_venue[];
 
-  @OneToMany(() => event, (event) => event.venue,)
-  events: event[];
+  @OneToMany(() => Event, (event) => event.venue,)
+  events: Event[];
 }
