@@ -1,9 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column,OneToOne,JoinColumn } from "typeorm"
+import { Entity, PrimaryGeneratedColumn, Column,OneToOne,JoinColumn, Unique } from "typeorm"
 import { User } from "./user"
 
 
 
-
+@Unique(["card_number", "date"])
 @Entity({name:"payment_card"})
 export class paymentCard {
     @PrimaryGeneratedColumn()
@@ -14,21 +14,17 @@ export class paymentCard {
 
     @Column({
         length:16,
-        unique:true
+        unique:false
     })
-    number: string
+    card_number: string
 
     @Column({
         length: 5,
     })
     date: string
 
-    @Column({
-        length: 3,
-    })
-    cvv: string
 
     @OneToOne(() => User, (user) => user.pay_card,{nullable: true})
-    @JoinColumn({name:"user_id",})
+    @JoinColumn({name:"user_id"})
     user: User
 }

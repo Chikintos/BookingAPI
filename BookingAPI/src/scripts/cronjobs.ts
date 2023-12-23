@@ -58,7 +58,7 @@ export async function paymentStatus() {
   });
   const badStatus = ["expired","reversed","declined"]
   const orderList: Order[] = await orderRepository.find({
-    where: { status: orderStatus.WAITING },
+    where: [{ status: orderStatus.WAITING }],
   });
   for (const order of orderList){
     const statusData = {
@@ -66,6 +66,7 @@ export async function paymentStatus() {
     };
     fondy.Status(statusData).then(async (data) => {
       const status_response=data.order_status;
+      console.log(order.id,data.order_status)
       if (badStatus.includes(status_response)){
         const bad_order = await orderRepository.findOne({
           where: { id: order.id },
@@ -75,8 +76,19 @@ export async function paymentStatus() {
         bad_order.transaction.status=transactionStatus.CANCELED
         await orderRepository.save(bad_order)
         await transactionRepository.save(bad_order.transaction)
-
-      }    
+      }  
+      if (status_response === "approved"){
+        const good_order = await orderRepository.findOne({
+          where: { id: order.id },
+          relations: { transaction: true,event: true },
+        })
+        good_order.status = orderStatus.SUCCESSFUL;
+        good_order.transaction.status = transactionStatus.SUCCESSFUL;
+        good_order.event.available_places-=order.place_number
+        await orderRepository.save(good_order);
+        await eventRepository.save(good_order.event);
+        await transactionRepository.save(good_order.transaction);
+      }  
     });
   }
 

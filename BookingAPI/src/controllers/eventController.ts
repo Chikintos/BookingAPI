@@ -28,13 +28,14 @@ const eventPhotoRepository = AppDataSource.getRepository(photo_event);
 
 export const eventCreate = asyncHandler(
   async (req: UserRequest, res: Response) => {
-    const {
+    let {
       name,
       price,
       date_start,
       date_end,
       description,
       event_type,
+      available_places,
       venue_id,
     } = req.body;
 
@@ -47,19 +48,23 @@ export const eventCreate = asyncHandler(
         date_start,
         date_end,
         description,
+        available_places,
         event_type,
       });
     } catch (err) {
-      console.log(err);
       res.status(400);
       throw new Error(err.message);
     }
+
     try {
       const Venue = await venueRepository.findOneBy({ id: venue_id });
       const user = await userRepository.findOneBy({ id: req.user.id });
       if (!Venue) {
         res.status(404);
         throw new Error("Venue not found");
+      }
+      if (!available_places) {
+        available_places = Venue.capacity;
       }
       const new_event: Event = await eventRepository.create({
         name,
@@ -69,6 +74,7 @@ export const eventCreate = asyncHandler(
         description,
         event_type,
         venue: Venue,
+        available_places,
         created_by: user,
       });
       await eventRepository.save(new_event);
@@ -116,6 +122,7 @@ export const eventUpdate = asyncHandler(
     } = req.body;
     const event_id: number = parseInt(req.params.id);
     let venue: Venue;
+
     try {
       await eventUpdateSchema.validate({
         role: req.user.role,
@@ -130,7 +137,7 @@ export const eventUpdate = asyncHandler(
       });
     } catch (err) {
       res.status(400);
-      throw new Error(err.errors.toString());
+      throw new Error(err.message);
     }
     try {
       const event = await eventRepository.findOne({
@@ -138,24 +145,24 @@ export const eventUpdate = asyncHandler(
         relations: { venue: true },
       });
       const user = await userRepository.findOneBy({ id: req.user.id });
+      if (!user) {
+        res.status(404);
+        throw new Error("user not found");
+      }
+
       if (venue_id) {
         venue = await venueRepository.findOneBy({ id: venue_id });
         if (!venue) {
           res.status(404);
           throw new Error("Venue not found");
         }
+        event.venue = venue;
       }
       if (!event) {
         res.status(404);
         throw new Error("event not found");
       }
-      if (!user) {
-        res.status(404);
-        throw new Error("user not found");
-      }
-      if (venue_id) {
-        event.venue = venue;
-      }
+
       if (name) {
         event.name = name;
       }
@@ -349,9 +356,9 @@ export const eventSearch = asyncHandler(
       date_end,
       event_type,
     } = req.query;
-    console.log(date_start)
-    const skip : number = parseInt(req.query.skip) || 0
-    const take : number = parseInt(req.query.take) || 10
+    console.log(date_start);
+    const skip: number = parseInt(req.query.skip) || 0;
+    const take: number = parseInt(req.query.take) || 10;
     try {
       await eventSearchSchema.validate({
         skip,
@@ -365,32 +372,39 @@ export const eventSearch = asyncHandler(
         event_type,
       });
 
-      const EventsQuery = eventRepository.createQueryBuilder("event")
-      if (name){
-        EventsQuery.andWhere("event.name ILIKE :q",{q:`%${name}%`})
+      const EventsQuery = eventRepository.createQueryBuilder("event");
+      if (name) {
+        EventsQuery.andWhere("event.name ILIKE :q", { q: `%${name}%` });
       }
-      if (address){
-        EventsQuery.leftJoinAndSelect('event.venue', 'venue').andWhere("venue.address ILIKE :q",{q:`%${address}%`})
+      if (address) {
+        EventsQuery.leftJoinAndSelect("event.venue", "venue").andWhere(
+          "venue.address ILIKE :q",
+          { q: `%${address}%` }
+        );
       }
-      if (price_min && price_max){
-        EventsQuery.andWhere("price BETWEEN :price_min AND :price_max",{price_min,price_max})
+      if (price_min && price_max) {
+        EventsQuery.andWhere("price BETWEEN :price_min AND :price_max", {
+          price_min,
+          price_max,
+        });
       }
-      if (date_start && date_end){
-        EventsQuery.andWhere("date BETWEEN :date_start AND :date_end",{date_start,date_end})
+      if (date_start && date_end) {
+        EventsQuery.andWhere("date BETWEEN :date_start AND :date_end", {
+          date_start,
+          date_end,
+        });
       }
 
-      EventsQuery.skip(skip).take(take)
-      const result = await EventsQuery.getMany()
-      res.json({result})
-    }catch (err) {
-      if(err.name  === "ValidationError"){
-        res.status(400)
-      }
-      else{
+      EventsQuery.skip(skip).take(take);
+      const result = await EventsQuery.getMany();
+      res.json({ result });
+    } catch (err) {
+      if (err.name === "ValidationError") {
+        res.status(400);
+      } else {
         res.status(500);
       }
       throw new Error(err.message);
     }
-
   }
 );

@@ -5,6 +5,7 @@ import { checkCallback, createOrder } from "../controllers/orderController";
 
 const router : Router = exress.Router();
 
+// create transaction
 
 router.post("/",validateToken,createOrder)
 router.all("/callback",checkCallback)

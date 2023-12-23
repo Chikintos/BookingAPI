@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column,OneToOne,JoinColumn, ManyToOne, OneToMany } from "typeorm"
+import { Entity, PrimaryGeneratedColumn, Column,OneToOne,JoinColumn, ManyToOne, OneToMany, BeforeInsert } from "typeorm"
 import { User } from "./user"
 import { Venue } from "./venue"
 import { photo_event } from "./photo_event"
@@ -23,7 +23,6 @@ export class Event {
     price: number
 
 
-
     @Column({type: "timestamp",nullable:false})
     date_start
 
@@ -37,6 +36,9 @@ export class Event {
         nullable:false
     })
     status: eventStatus
+
+    @Column({default:0})
+    available_places: number
 
     @Column({nullable:false})
     description: string
@@ -52,5 +54,6 @@ export class Event {
 
     @OneToMany(() => photo_event, (photo_event) => photo_event.event)
     photos: photo_event[];
-  
+    
+
 }

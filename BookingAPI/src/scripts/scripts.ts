@@ -56,7 +56,7 @@ export async function createPayment(order: Order,order_desc: string): Promise<st
   });
   const requestData = {
     order_id: "id:"+order.id,
-    lifetime:600,
+    lifetime:20,
     server_callback_url,
     sender_email: order.user.email , 
     order_desc,

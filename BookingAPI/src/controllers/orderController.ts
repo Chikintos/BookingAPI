@@ -31,7 +31,8 @@ export const createOrder = asyncHandler(
     try {
       const user: User = await userRepository.findOneBy({ id: req.user.id });
       const event: Event = await eventRepository.findOneBy({ id: event_id });
-
+      const amount: number = event.price * place_number;
+      
       if (!user) {
         res.status(404);
         throw new Error("User not found");
@@ -40,25 +41,30 @@ export const createOrder = asyncHandler(
         res.status(404);
         throw new Error("Event not found");
       }
-      //   CHECK FOR PLACES
-      const amount: number = event.price * place_number;
+      if (event.available_places < place_number){
+        throw new Error("Places aren`t avaliable")
+      }
+      if (!user.pay_card){
+        throw new Error("User haven`t card")
+      }
+     
 
-      const new_transaction : Transaction = await transactionRepository.create({
+      const transaction: Transaction = await transactionRepository.create({
         payment_card: user.pay_card,
       });
-      await transactionRepository.save(new_transaction);
+      await transactionRepository.save(transaction);
 
-      const order : Order = await orderRepository.create({
+      const order: Order = await orderRepository.create({
         amount,
         place_number,
-        transaction:new_transaction,
+        transaction,
         user,
-        event
-      })
-      await orderRepository.save(order)
-      const order_desc= `Придбання ${order.place_number} квитків для ${order.user.email} на ${order.event.name}`
-      const payment = await createPayment(order,order_desc)
-      res.json(payment)
+        event,
+      });
+      await orderRepository.save(order);
+      const order_desc = `Придбання ${order.place_number} квитків для ${order.user.email} на ${order.event.name}`;
+      const payment = await createPayment(order, order_desc);
+      res.json(payment);
     } catch (err) {
       if (res.statusCode === 200) {
         res.status(500);
@@ -68,26 +74,24 @@ export const createOrder = asyncHandler(
   }
 );
 
-
-
-
 export const checkCallback = asyncHandler(
-    async (req: UserRequest, res: Response) => {
-        const badStatus = ["expired","reversed","declined"]
+  async (req: UserRequest, res: Response) => {
+    let { order_id } = req.body;
+    order_id = order_id.replace("id:", "");
 
-        const {order_status,order_id} = req.body
-        const order = await orderRepository.findOne({where: {id:order_id.replace("id:", "")},relations:{transaction:true}})
-        console.log(req.body,order)
-        if (order_status in badStatus){
-            order.status=orderStatus.CANCELED
-            order.transaction.status=transactionStatus.CANCELED
-        }        
-        else if(order_status === "approved") {
-            order.status=orderStatus.SUCCESSFUL
-            order.transaction.status=transactionStatus.SUCCESSFUL
-        }
-        await orderRepository.save(order)
-        await transactionRepository.save(order.transaction)
-        
-
-    })
+    const order = await orderRepository.findOne({
+      where: { id: order_id },
+      relations: { transaction: true ,event : true},
+    });
+    if(order.transaction.status=== transactionStatus.SUCCESSFUL){
+      return
+    }
+    console.log(req.body, order);
+    order.status = orderStatus.SUCCESSFUL;
+    order.transaction.status = transactionStatus.SUCCESSFUL;
+    order.event.available_places-=order.place_number
+    await orderRepository.save(order);
+    await eventRepository.save(order.event);
+    await transactionRepository.save(order.transaction);
+  }
+);

@@ -31,10 +31,12 @@ export const eventCreateSchema = object({
   venue_id: number().integer().min(0).required(),
   name: string().min(3).max(50).required(),
   price: number().min(0).integer().required(),
-  date_start: date(),
-  date_end: date(),
+  date_start: date().required(),
+  date_end: date().required(),
+  avaliable_places:number().min(0),
   description: string().min(50).required(),
   event_type: string().min(3).max(50).required(),
+  
 }).test("date-compare", "Validation failure", function (values) {
   const { date_start, date_end } = values;
   if (date_start && date_end) {

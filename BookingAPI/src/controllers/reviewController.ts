@@ -7,6 +7,7 @@ import { AppDataSource } from "../data-source";
 import { Venue } from "../entity/venue";
 import { User, UserRole } from "../entity/user";
 import { Review } from "../entity/review";
+import { number } from "yup";
 
 const venueRepository = AppDataSource.getRepository(Venue);
 const userRepository = AppDataSource.getRepository(User);
@@ -14,7 +15,7 @@ const reviewRepository = AppDataSource.getRepository(Review);
 
 export const ReviewCreate = asyncHandler(
   async (req: UserRequest, res: Response) => {
-    const { venue_id, rate, comment } = req.body;
+    let { venue_id, rate, comment } = req.body;
     try {
       await reviewCreateSchema.validate({
         role: req.user.role,
@@ -37,6 +38,10 @@ export const ReviewCreate = asyncHandler(
       if (!user) {
         res.status(404);
         throw new Error("User not found");
+      }
+      const usersReview  = await reviewRepository.countBy({user})
+      if (usersReview === 2){
+        throw new Error("Max count of comments is reached")
       }
       const review: Review = await reviewRepository.create({
         rate,

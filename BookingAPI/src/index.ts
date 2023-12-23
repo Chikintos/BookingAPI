@@ -7,6 +7,7 @@ import { router as fileRouter } from "./routers/fileRouter"
 import { router as eventRouter } from "./routers/eventRouter"
 import { router as reviewRouter } from "./routers/reviewRouter"
 import { router as orderRouter } from "./routers/orderRouter"
+import { router as paymentCardRouter } from "./routers/paymentCardRouter"
 
 import upload from "./configs/multer_config"
 import bodyParser from "body-parser";
@@ -42,10 +43,11 @@ app.use("/image",fileRouter)
 app.use("/api/event",eventRouter)
 app.use("/api/review",reviewRouter)
 app.use("/api/order",orderRouter)
+app.use("/api/paymentcard",paymentCardRouter)
 
 app.use(errorHandler)
 
-cron.schedule('*/2 * * * * *', () => {
+cron.schedule('*/20 * * * * *', () => {
   updateRate()
   paymentStatus()
 });
