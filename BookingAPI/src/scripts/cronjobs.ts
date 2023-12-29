@@ -3,7 +3,7 @@ import { Venue } from "../entity/venue";
 import { User } from "../entity/user";
 import { Review } from "../entity/review";
 import { MoreThanOrEqual } from "typeorm";
-import { logger } from "../configs/logger_config";
+import { logger_cronjob } from "../configs/logger_config";
 import Cloudipsp from "cloudipsp-node-js-sdk";
 import { Order, orderStatus } from "../entity/order";
 import { Event } from "../entity/event";
@@ -42,7 +42,7 @@ export async function updateRate() {
       await venueRepository.save(venueUp);
     }
   } catch (err) {
-    logger.log({
+    logger_cronjob.log({
       level: "cronjob",
       message: `${err.message} | Error stack: ${err.stack}`,
     });
@@ -92,7 +92,7 @@ export async function paymentStatus() {
       }
     });
   }}catch(err){
-    logger.log({
+    logger_cronjob.log({
       level: "cronjob",
       message: `${err.message} | Error stack: ${err.stack}`,
     });

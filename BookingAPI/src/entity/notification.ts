@@ -9,10 +9,10 @@ import { Venue } from "./venue";
 import { User } from "./user";
 
 export enum notificationCode {
-  INFO = 10,
-  SUCCESS = 20,
-  ERROR = 30,
-  ALERT = 31,
+  INFO = "10",
+  SUCCESS = "20",
+  ERROR = "30",
+  ALERT = "31",
 }
 
 @Entity({ name: "notification" })
