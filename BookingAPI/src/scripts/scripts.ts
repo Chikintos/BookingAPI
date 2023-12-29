@@ -3,10 +3,11 @@ import jsonwebtoken from "jsonwebtoken";
 import { UserTokenInfo } from "../interfaces/UserTokenInfo";
 import { Order } from "../entity/order";
 import Cloudipsp  from 'cloudipsp-node-js-sdk';
+import { getBanWordslist } from "../controllers/banwordsController";
 
 
 export async function Check_Profanity(text : string) : Promise<boolean>{
-    const badWords = ["мат","Mr.Burns","Sathan"];
+    const badWords  = await getBanWordslist();
 
     const reEscape = s => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const badWordsRE = new RegExp(badWords.map(reEscape).join('|'));
@@ -44,12 +45,31 @@ export async function token_info(req: UserRequest) : Promise<UserTokenInfo> {
 
 
 
+export async function createRefund(order:Order): Promise<string> {
+  const merchantId = process.env.MERCHANT_ID
+  const secretKey = process.env.SECRET_KEY
+  const fondy =  new Cloudipsp({
+    merchantId,
+    secretKey,
+  });
+  const requestData = {
+    order_id: "id:"+order.id,
+    currency: 'UAH',
+    amount: order.amount*100
+  };
+  try {
+    const data = await fondy.refund(requestData);
+    console.log(data);
+    return data; 
+  } catch (error) {
+    throw new Error()
+  }
+}
 
 export async function createPayment(order: Order,order_desc: string): Promise<string> {
   const merchantId = process.env.MERCHANT_ID
   const secretKey = process.env.SECRET_KEY
   const server_callback_url = process.env.URL + "/api/order/callback"
-
   const fondy =  new Cloudipsp({
     merchantId,
     secretKey,

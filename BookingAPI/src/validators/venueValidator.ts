@@ -4,7 +4,7 @@ import { phone_regex } from "./userValidator";
 
 
 export const venueCreateSchema = object({
-    role: string<UserRole.ADMIN>().required(),
+    role: string().oneOf([UserRole.ADMIN]).required(),
     name: string().min(5).max(40).required(),
     address: string().min(5).required(),
     phone_number: string().matches(phone_regex, { excludeEmptyString: true }).required(),
@@ -16,7 +16,7 @@ export const venueCreateSchema = object({
 
 export const venueUpdateSchema = object({
     venue_id: number().min(1).integer().required(),
-    role: string().required(UserRole.ADMIN),
+    role: string().oneOf([UserRole.ADMIN]).required(),
     name: string().min(5).max(40),
     phone_number: string().matches(phone_regex, { excludeEmptyString: true }),
     address: string().min(5),

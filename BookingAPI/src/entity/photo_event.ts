@@ -22,7 +22,4 @@ export class photo_event {
     @ManyToOne(() => Event, (Event) => Event.photos,{ onDelete: "CASCADE" })
     event: Event
 
-
-
-
 }

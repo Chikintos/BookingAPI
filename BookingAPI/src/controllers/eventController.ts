@@ -280,8 +280,7 @@ export const eventAddPhoto = asyncHandler(
     } catch (err) {
       res.status(400);
       fs.unlinkSync(photo.path);
-      if (err?.errors) throw new Error(err.message);
-      throw new Error(err);
+      throw new Error(err.message);
     }
     const result = await uploadFile(photo);
     fs.unlinkSync(photo.path);

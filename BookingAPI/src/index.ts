@@ -8,6 +8,7 @@ import { router as eventRouter } from "./routers/eventRouter"
 import { router as reviewRouter } from "./routers/reviewRouter"
 import { router as orderRouter } from "./routers/orderRouter"
 import { router as paymentCardRouter } from "./routers/paymentCardRouter"
+import { router as banWordRouter } from "./routers/banwordRouter"
 
 import upload from "./configs/multer_config"
 import bodyParser from "body-parser";
@@ -44,6 +45,8 @@ app.use("/api/event",eventRouter)
 app.use("/api/review",reviewRouter)
 app.use("/api/order",orderRouter)
 app.use("/api/paymentcard",paymentCardRouter)
+app.use("/api/banwords",banWordRouter)
+
 
 app.use(errorHandler)
 

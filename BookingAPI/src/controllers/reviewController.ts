@@ -41,7 +41,7 @@ export const ReviewCreate = asyncHandler(
       }
       const usersReview  = await reviewRepository.countBy({user})
       if (usersReview === 2){
-        throw new Error("Max count of comments is reached")
+        throw new Error("Max number of comments for user is reached")
       }
       const review: Review = await reviewRepository.create({
         rate,
@@ -49,8 +49,8 @@ export const ReviewCreate = asyncHandler(
         venue,
         user,
       });
-      const ret: Review = await reviewRepository.save(review);
-      res.status(201).json({ status: "created" });
+      const created_review: Review = await reviewRepository.save(review);
+      res.status(201).json({ "review_id": created_review.id });
     } catch (err) {
       if (res.statusCode === 200) {
         res.status(500);

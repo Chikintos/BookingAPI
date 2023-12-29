@@ -43,7 +43,7 @@ export async function updateRate() {
     }
   } catch (err) {
     logger.log({
-      level: "cronjob error",
+      level: "cronjob",
       message: `${err.message} | Error stack: ${err.stack}`,
     });
   }
@@ -52,45 +52,49 @@ export async function updateRate() {
 export async function paymentStatus() {
   const merchantId = process.env.MERCHANT_ID;
   const secretKey = process.env.SECRET_KEY;
+  try{
   const fondy = new Cloudipsp({
     merchantId,
     secretKey,
   });
-  const badStatus = ["expired","reversed","declined"]
+  const badStatus = ["expired", "reversed", "declined"];
   const orderList: Order[] = await orderRepository.find({
     where: [{ status: orderStatus.WAITING }],
   });
-  for (const order of orderList){
+  for (const order of orderList) {
     const statusData = {
       order_id: `id:${order.id}`,
     };
     fondy.Status(statusData).then(async (data) => {
-      const status_response=data.order_status;
-      console.log(order.id,data.order_status)
-      if (badStatus.includes(status_response)){
+      const status_response = data.order_status;
+
+      if (badStatus.includes(status_response)) {
         const bad_order = await orderRepository.findOne({
           where: { id: order.id },
           relations: { transaction: true },
         });
-        bad_order.status=orderStatus.CANCELED
-        bad_order.transaction.status=transactionStatus.CANCELED
-        await orderRepository.save(bad_order)
-        await transactionRepository.save(bad_order.transaction)
-      }  
-      if (status_response === "approved"){
+        bad_order.status = orderStatus.CANCELED;
+        bad_order.transaction.status = transactionStatus.CANCELED;
+        await orderRepository.save(bad_order);
+        await transactionRepository.save(bad_order.transaction);
+      }
+      if (status_response === "approved") {
         const good_order = await orderRepository.findOne({
           where: { id: order.id },
-          relations: { transaction: true,event: true },
-        })
+          relations: { transaction: true, event: true },
+        });
         good_order.status = orderStatus.SUCCESSFUL;
         good_order.transaction.status = transactionStatus.SUCCESSFUL;
-        good_order.event.available_places-=order.place_number
+        good_order.event.available_places -= order.place_number;
         await orderRepository.save(good_order);
         await eventRepository.save(good_order.event);
         await transactionRepository.save(good_order.transaction);
-      }  
+      }
+    });
+  }}catch(err){
+    logger.log({
+      level: "cronjob",
+      message: `${err.message} | Error stack: ${err.stack}`,
     });
   }
-
-
 }
