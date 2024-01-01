@@ -9,6 +9,7 @@ import {
   notificationCreateSchema,
 } from "../validators/notificationValidator";
 import { User, UserRole } from "../entity/user";
+import { emailSendMessage } from "../scripts/email-sender";
 
 const notificationRepository = AppDataSource.getRepository(Notification);
 const userRepository = AppDataSource.getRepository(User);
@@ -44,6 +45,21 @@ export const createNotification = asyncHandler(
       });
       notification = await notificationRepository.save(notification);
       // send email
+      const link = `${process.env.URL}/api/notification/${notification.id}`
+      const send_email = await emailSendMessage(
+        {
+          Email: "triathlet.52@gmail.com",
+          Name: "sendersss",
+        },
+        {
+          Email: user.email,
+          Name: user.firstName,
+        },
+        {
+          message_type: "notification",
+          data: { code: notification.code, text: notification.message,link},
+        }
+      );
       res.json(notification.id);
     } catch (err) {
       if (res.statusCode === 200) {

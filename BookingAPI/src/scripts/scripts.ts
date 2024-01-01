@@ -4,7 +4,7 @@ import { UserTokenInfo } from "../interfaces/UserTokenInfo";
 import { Order } from "../entity/order";
 import Cloudipsp  from 'cloudipsp-node-js-sdk';
 import { getBanWordslist } from "../controllers/banwordsController";
-
+import * as qrcode from "qrcode"
 
 export async function Check_Profanity(text : string) : Promise<boolean>{
     const badWords  = await getBanWordslist();
@@ -91,4 +91,21 @@ export async function createPayment(order: Order,order_desc: string): Promise<st
   } catch (error) {
     throw new Error()
   }
+}
+
+export function generateQR(text: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    qrcode.toDataURL(text, {
+      errorCorrectionLevel: 'H',
+      type: 'png'
+    }, (err, dataUrl) => {
+      if (err) {
+        reject(err);
+      } else {
+        // Extract the base64 part from the data URL
+        const base64Data = dataUrl.split(',')[1];
+        resolve(base64Data);
+      }
+    });
+  });
 }

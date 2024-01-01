@@ -5,32 +5,34 @@ interface EmailPerson {
   Name: string;
 }
 
-interface MessageData {
-  Subject: string;
-  TextPart: string;
-  CustomID?: string;
-}
+interface Ticket {
+  message_type: "ticket";
+  base64photo: string;
 
-interface Message {
-  [key: string]: {
-    template_path: string;
-    variables: object;
-    CustomID: string;
+  data: {
+    event_name: string;
+    places_number: number;
+    owner_email: string;
+    event_location: string;
+    link: string;
   };
 }
 
-const Messages: Message = {
-  name: {
-    template_path: "",
-    variables: {},
-    CustomID: ""
-  },
-  name2: {
-    template_path: "",
-    variables: {},
-    CustomID: ""
-  }
+interface Notification {
+  message_type: "notification";
+  data: {
+    code: string;
+    text: string;
+    link: string;
+  };
 }
+
+const codeToColor = {
+  "10": "grey",
+  "20": "green",
+  "30": "red",
+  "31": "#700000",
+};
 
 const client = Mailjet.apiConnect(
   process.env.MAILJET_API_KEY,
@@ -38,7 +40,6 @@ const client = Mailjet.apiConnect(
 );
 
 export function addContact(Name, Email) {
-
   const request = client.post("contact", { version: "v3" }).request({
     IsExcludedFromCampaigns: "true",
     Name,
@@ -53,23 +54,47 @@ export function addContact(Name, Email) {
     });
 }
 
-export function emailSendMessage(
+export async function emailSendMessage(
   From: EmailPerson,
   To: EmailPerson,
-  messageType,
-  messageData: MessageData) 
-{
-  const request = client.post("send", { version: "v3.1" }).request({
-    Messages: [
-      {
-        From,
-        To: [To],
-        Subject: messageData.Subject,
-        TextPart: messageData.TextPart,
-        HTMLPart:
-          "<h3>Dear passenger 1, welcome to <a href='https://www.mailjet.com/'>Mailjet</a>!</h3><br />May the delivery force be with you!",
-        CustomID: messageData.CustomID || "No id",
-      },
-    ],
-  });
+  messageData: Ticket | Notification
+) {
+  if (messageData.message_type === "notification") {
+    messageData.data.code = codeToColor[messageData.data.code];
+    const request = await client.post("send", { version: "v3.1" }).request({
+      Messages: [
+        {
+          From,
+          To: [To],
+          TemplateID: 5502745,
+          TemplateLanguage: true,
+          Subject: "Notification",
+          Variables: messageData.data,
+        },
+      ],
+    });
+    return request;
+  } else if (messageData.message_type === "ticket") {
+    const request = await client.post("send", { version: "v3.1" }).request({
+      Messages: [
+        {
+          From,
+          To: [To],
+          TemplateID: 5513079,
+          TemplateLanguage: true,
+          Subject: "Order results",
+          Variables: messageData.data,
+          InlinedAttachments: [
+            {
+              ContentType: "image/png",
+              Filename: "qr.png",
+              ContentID: "id1",
+              Base64Content: messageData.base64photo,
+            },
+          ],
+        },
+      ],
+    });
+  }
+
 }

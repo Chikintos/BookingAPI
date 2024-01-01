@@ -10,7 +10,7 @@ import { Order, orderStatus } from "../entity/order";
 import { Transaction, transactionStatus } from "../entity/transaction";
 import { User, UserRole } from "../entity/user";
 import { Event } from "../entity/event";
-import { createPayment, createRefund } from "../scripts/scripts";
+import { createPayment, createRefund, generateQR } from "../scripts/scripts";
 import { addContact, emailSendMessage } from "../scripts/email-sender";
 import { stat } from "fs";
 
@@ -91,7 +91,7 @@ export const checkCallback = asyncHandler(
 
     const order = await orderRepository.findOne({
       where: { id: order_id },
-      relations: { transaction: true, event: true },
+      relations: { transaction: true, event: { venue: true }, user: true },
     });
     if (order.transaction.status === transactionStatus.SUCCESSFUL) {
       return;
@@ -103,6 +103,50 @@ export const checkCallback = asyncHandler(
     await orderRepository.save(order);
     await eventRepository.save(order.event);
     await transactionRepository.save(order.transaction);
+
+    const qrcode = await generateQR(
+      `${order.event.name}|${order.event.venue.address}|${order.place_number}`
+    );
+    console.log(      {
+      Email: "triathlet.52@gmail.com",
+      Name: "sendersss",
+    },
+    {
+      Email: order.user.email,
+      Name: order.user.firstName,
+    },
+    {
+      message_type: "ticket",
+      base64photo: qrcode,
+      data: {
+        event_name: order.event.name,
+        places_number: order.place_number,
+        owner_email: order.user.email,
+        event_location: order.event.venue.address,
+        link: "linkdsadasd",
+      },
+    })
+    await emailSendMessage(
+      {
+        Email: "triathlet.52@gmail.com",
+        Name: "sendersss",
+      },
+      {
+        Email: order.user.email,
+        Name: order.user.firstName,
+      },
+      {
+        message_type: "ticket",
+        base64photo: qrcode,
+        data: {
+          event_name: order.event.name,
+          places_number: order.place_number,
+          owner_email: order.user.email,
+          event_location: order.event.venue.address,
+          link: "linkdsadasd",
+        },
+      }
+    );
   }
 );
 
@@ -131,13 +175,6 @@ export const cancelOrder = asyncHandler(
     await orderRepository.save(order);
     await transactionRepository.save(order.transaction);
     res.status(200).json({ status: "order canceled" });
-  }
-);
-
-export const sendemail = asyncHandler(
-  async (req: UserRequest, res: Response) => {
-    // emailSendMessage(1,2,3)
-    addContact("chikita", "triathlet.51@gmail.com");
   }
 );
 
