@@ -33,7 +33,7 @@ export const eventCreateSchema = object({
   price: number().min(0).integer().required(),
   date_start: date().required(),
   date_end: date().required(),
-  avaliable_places:number().min(0),
+  avaliable_places:number().min(0).required(),
   description: string().min(50).required(),
   event_type: string().min(3).max(50).required(),
   

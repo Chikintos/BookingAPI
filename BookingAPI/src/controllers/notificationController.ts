@@ -11,14 +11,18 @@ import {
 import { User, UserRole } from "../entity/user";
 import { emailSendMessage } from "../scripts/email-sender";
 
+// Get repositories from the data source
 const notificationRepository = AppDataSource.getRepository(Notification);
 const userRepository = AppDataSource.getRepository(User);
 
+
+// Express route handler to create a new notification
 export const createNotification = asyncHandler(
   async (req: UserRequest, res: Response) => {
     try {
       const { message, user_id, code } = req.body;
       try {
+        // Validate notification
         await notificationCreateSchema.validate({
           message,
           role: req.user.role,
@@ -37,6 +41,8 @@ export const createNotification = asyncHandler(
         res.status(404);
         throw new Error("user or admin not found");
       }
+      
+      // Create and save the notification
       let notification: Notification = await notificationRepository.create({
         code,
         message,
@@ -44,12 +50,12 @@ export const createNotification = asyncHandler(
         user,
       });
       notification = await notificationRepository.save(notification);
-      // send email
+      // Send email notification
       const link = `${process.env.URL}/api/notification/${notification.id}`
       const send_email = await emailSendMessage(
         {
           Email: "triathlet.52@gmail.com",
-          Name: "sendersss",
+          Name: "sender",
         },
         {
           Email: user.email,
@@ -70,14 +76,18 @@ export const createNotification = asyncHandler(
   }
 );
 
+// Express route handler to get a specific notification
 export const getNotification = asyncHandler(
   async (req: UserRequest, res: Response) => {
     try {
       const notification_id: number = parseInt(req.params.id);
+      
       if (!notification_id) {
         res.status(400);
         throw new Error("Invalid Id");
       }
+
+      // Find the notification with related user and admin information
       const notification: Notification = await notificationRepository.findOne({
         where: { id: notification_id },
         relations: { user: true, admin: true },
@@ -100,6 +110,8 @@ export const getNotification = asyncHandler(
         res.status(404);
         throw new Error("notification not found");
       }
+
+      // Update notification view status if the user is the recipient
       if (notification.user.id == req.user.id) {
         notification.view = true;
         await notificationRepository.save(notification);
@@ -116,12 +128,14 @@ export const getNotification = asyncHandler(
   }
 );
 
+// Express route handler to get notifications for a user
 export const getUserNotification = asyncHandler(
   async (req: UserRequest, res: Response) => {
     try {
       const { skip, filter, order } = req.body;
       const user_id: number = parseInt(req.params.id);
 
+      // Validate parameters
       try {
         await getUserNotificationSchema.validate({
           user_id,
@@ -135,10 +149,14 @@ export const getUserNotification = asyncHandler(
       }
 
       const user: User = await userRepository.findOneBy({ id: user_id });
+          
+      // Check if the requester has the right to view notifications
       if (user.id != req.user.id && req.user.role !== UserRole.ADMIN) {
         res.status(403);
-        throw new Error("only recipient and admin cat see a message");
+        throw new Error("only recipient and admin can see a message");
       }
+      
+      // Get notifications based on specified criteria
       const notification: [Notification[], number] =
         await notificationRepository.findAndCount({
           where: { user, view: messageFilter[filter] },
@@ -164,16 +182,21 @@ export const getUserNotification = asyncHandler(
   }
 );
 
+// Express route handler to get the number of unread notifications for a user
 export const getNotificationNumberByUser = asyncHandler(
   async (req: UserRequest, res: Response) => {
     try {
       const user_id: number = parseInt(req.params.id);
 
       const user: User = await userRepository.findOneBy({ id: user_id });
+
+      // Check if the requester has the right to view notification numbers
       if (user.id != req.user.id) {
         res.status(403);
         throw new Error("only recipient can see a message number");
       }
+ 
+      // Get the number of unread notifications for the user
       const notification_number: number = await notificationRepository.count({
         where: { user, view: false },
       });

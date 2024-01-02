@@ -1,10 +1,12 @@
 import Mailjet from "node-mailjet";
 
+// Define the structure of a person's email information
 interface EmailPerson {
   Email: string;
   Name: string;
 }
 
+// Define the structure of a ticket message
 interface Ticket {
   message_type: "ticket";
   base64photo: string;
@@ -18,6 +20,7 @@ interface Ticket {
   };
 }
 
+// Define the structure of a notification message
 interface Notification {
   message_type: "notification";
   data: {
@@ -27,6 +30,17 @@ interface Notification {
   };
 }
 
+// Define the structure of an email notification message
+interface emailNotification {
+  message_type: "emailNotification";
+  data: {
+    code: string;
+    text: string;
+    link: string;
+  };
+}
+
+// Map notification codes to color codes
 const codeToColor = {
   "10": "grey",
   "20": "green",
@@ -34,11 +48,13 @@ const codeToColor = {
   "31": "#700000",
 };
 
+// Create a Mailjet client
 const client = Mailjet.apiConnect(
   process.env.MAILJET_API_KEY,
   process.env.MAILJET_API_SECRET
 );
 
+// Function to add a contact to Mailjet
 export function addContact(Name, Email) {
   const request = client.post("contact", { version: "v3" }).request({
     IsExcludedFromCampaigns: "true",
@@ -54,11 +70,13 @@ export function addContact(Name, Email) {
     });
 }
 
+// Function to send an email message
 export async function emailSendMessage(
   From: EmailPerson,
   To: EmailPerson,
-  messageData: Ticket | Notification
+  messageData: Ticket | Notification | emailNotification
 ) {
+  // Handle notification message type
   if (messageData.message_type === "notification") {
     messageData.data.code = codeToColor[messageData.data.code];
     const request = await client.post("send", { version: "v3.1" }).request({
@@ -74,6 +92,8 @@ export async function emailSendMessage(
       ],
     });
     return request;
+
+  // Handle ticket message type
   } else if (messageData.message_type === "ticket") {
     const request = await client.post("send", { version: "v3.1" }).request({
       Messages: [
@@ -95,6 +115,22 @@ export async function emailSendMessage(
         },
       ],
     });
+  // Handle email notification message type
+  } else if (messageData.message_type === "emailNotification") {
+    messageData.data.code = codeToColor[messageData.data.code];
+    const request = await client.post("send", { version: "v3.1" }).request({
+      Messages: [
+        {
+          From,
+          To: [To],
+          TemplateID: 5513247,
+          TemplateLanguage: true,
+          Subject: "Email Notification",
+          Variables: messageData.data,
+        },
+      ],
+    });
+    return request;
+    
   }
-
 }

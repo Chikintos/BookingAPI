@@ -52,12 +52,13 @@ app.use("/api/notification",notificationRouter)
 
 app.use(errorHandler)
 
-cron.schedule('*/20 * * * * *', () => {
-  updateRate()
-  paymentStatus()
-});
+
 
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://${host}:${port}`);
 });
 
+cron.schedule('* * * * * *', () => {
+  updateRate()
+  paymentStatus()
+});
